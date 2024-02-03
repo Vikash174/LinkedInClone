@@ -1,4 +1,4 @@
-const Comment = () => {
+const Comment = ({ comment }) => {
   return (
     <div className="flex items-start gap-2 my-2">
       <div>
@@ -11,7 +11,7 @@ const Comment = () => {
       <div className="w-full">
         <div className="flex flex-col bg-gray-200 p-2  rounded-md text-sm">
           <span className="font-semibold ">Vikash Rai</span>
-          <span>Great share</span>
+          <span>{comment}</span>
         </div>
         <div className="text-[0.7rem] p-1">
           <span className="hover:cursor-pointer">{`Like | `}</span>

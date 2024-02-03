@@ -1,4 +1,4 @@
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { db } from "../firebase";
 
@@ -6,24 +6,27 @@ const useUserData = (userId) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  console.log(user);
   useEffect(() => {
     const getUserData = async () => {
       try {
         console.log(userId);
         // Get a document reference based on the user ID
-        const userRef = doc(db, "users", userId);
 
         // Get the user document
-        const userDoc = await getDoc(userRef);
+        const querySnapshot = await getDocs(collection(db, "users"));
 
-        if (userDoc.exists()) {
-          // If the user document exists, set the user state
-          setUser({ id: userDoc.id, ...userDoc.data() });
-        } else {
-          // If the user document doesn't exist, set user state to null
-          setUser(null);
-        }
+        querySnapshot.forEach((doc) => {
+          // doc.data() is never undefined for query doc snapshots
+          if (doc.data().uid === userId) {
+            console.log("found user");
+            console.log(doc.data());
+            setUser(doc.data());
+            return;
+          }
+        });
+
+        //  If the user document doesn't exist, set user state to null
 
         setLoading(false);
       } catch (error) {

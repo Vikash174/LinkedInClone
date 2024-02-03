@@ -4,37 +4,53 @@ import { BiLike, BiRepost } from "react-icons/bi";
 import { FiSend } from "react-icons/fi";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import Comment from "../comment/Comment";
-import { useState } from "react";
-import { timeAgo } from "../../utils/utilitiesFunctions";
+import { useRef, useState } from "react";
+import { addCommentToFirestore, timeAgo } from "../../utils/utilitiesFunctions";
 import useUserData from "../../custom_hooks/useUserData";
+import { addDoc, collection, doc } from "firebase/firestore";
+import { db } from "../../firebase";
+import { useSelector } from "react-redux";
+import useCommentsData from "../../custom_hooks/useCommentsData";
 
-// eslint-disable-next-line react/prop-types
 const Post = (props) => {
-  // eslint-disable-next-line react/prop-types
-  const { content, datePublished, userId } = props.article;
+  const { content, datePublished, userId, id } = props.article;
   const [showCommentSection, setShowCommentSection] = useState(false);
+  const [commentInputValue, setCommentInputValue] = useState("");
 
-  console.log(userId);
-  const { user, error, loading } = useUserData(userId);
-
-  console.log(user, error, loading);
+  const { user } = useUserData(userId);
+  const { comments } = useCommentsData(id);
+  console.log(comments);
 
   const handleComment = () => {
     setShowCommentSection(!showCommentSection);
   };
-  const sendCommentHandler = () => {};
+
+  const sendCommentHandler = async () => {
+    try {
+      const articleRef = doc(db, "articles", id);
+      const commentsCollection = collection(articleRef, "comments");
+
+      await addDoc(commentsCollection, {
+        comment: commentInputValue,
+        userId,
+      });
+      setCommentInputValue("");
+
+      console.log("Comment added successfully!");
+    } catch (error) {
+      console.error("Error adding comment:", error.message);
+    }
+  };
 
   return (
-    <div className=" flex flex-col gap-4  min-w-[400px] m-4 bg-white p-2 rounded-md shadow-md">
+    <div className="flex flex-col gap-4 min-w-[300px] max-w-[600px] m-4 bg-white p-2 rounded-md shadow-md">
       {/* User Info */}
-
-      <div className=" flex justify-between items-center">
+      <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <img src={""} alt="" className="w-10 rounded-full" />
-          <span className="text-lg font-semibold">{""}</span>
+          <img src={user?.photoUrl} alt="" className="w-10 rounded-full" />
+          <span className="text-lg font-semibold">{user?.displayName}</span>
           <p>{timeAgo(datePublished)}</p>
         </div>
-
         <div>
           <BsThreeDotsVertical />
         </div>
@@ -44,19 +60,18 @@ const Post = (props) => {
       <div>
         <p>{content}</p>
       </div>
-
       <hr />
       {/* Like, share & comments count */}
       <div className="flex items-center justify-between">
         <div className="flex items-center">
-          <BiLike className=" text-black bg-blue-300 rounded-full " />{" "}
-          <span className="text-sm">36 likes</span>
+          <BiLike className="text-black bg-blue-300 rounded-full" />
+          <span className="text-sm">0 likes</span>
         </div>
         <div>
-          <span className="text-sm">2 comments . 7 resposts</span>
+          <span className="text-sm"> 0 resposts</span>
         </div>
       </div>
-      {/* Like,Share & Comments */}
+      {/* Like, Share & Comments */}
       <div className="flex items-center justify-between">
         <div className="flex items-center hover:cursor-pointer">
           <AiOutlineLike />
@@ -78,7 +93,6 @@ const Post = (props) => {
           <span>Send</span>
         </div>
       </div>
-
       {/* Comments */}
       {showCommentSection && (
         <div>
@@ -89,6 +103,8 @@ const Post = (props) => {
               className="w-8 rounded-full"
             />
             <input
+              value={commentInputValue}
+              onChange={(e) => setCommentInputValue(e.target.value)}
               type="text"
               placeholder="Add a comment...."
               className="border border-gray-400 rounded-r-full rounded-l-full p-1 w-full"
@@ -98,11 +114,9 @@ const Post = (props) => {
               onClick={sendCommentHandler}
             />
           </div>
-          <Comment />
-          <Comment />
-          <Comment />
-          <Comment />
-          <Comment />
+          {comments.map((comment) => {
+            return <Comment key={comment.userId} comment={comment.comment} />;
+          })}
         </div>
       )}
     </div>

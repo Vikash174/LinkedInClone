@@ -6,14 +6,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { addArticles } from "../../redux/slices/articlesSlice";
 
 const PostContainer = () => {
-  // const[articles, setArticles] = useState();
-
   const articles = useSelector((state) => state.articles);
+  const searchTerm = useSelector((state) => state.utils.searchTerm);
   const dispatch = useDispatch();
 
   const getRealtimeArticlesFromFirestore = () => {
     try {
-      // Subscribe to changes in the 'articles' collection in real-time
       const unsubscribe = onSnapshot(
         collection(db, "articles"),
         (querySnapshot) => {
@@ -22,33 +20,41 @@ const PostContainer = () => {
             ...doc.data(),
           }));
 
-          console.log(articles);
-
-          // Update the state or perform any actions with the real-time data
           dispatch(addArticles(articles));
-
-          // updateFunction(articles);
         }
       );
 
-      return unsubscribe; // Return the unsubscribe function to stop listening when needed
+      return unsubscribe;
     } catch (error) {
       console.error("Error retrieving real-time articles: ", error);
-      return null; // Return null in case of an error
+      return null;
     }
   };
+
+  const filteredArticles = articles.filter((article) =>
+    article.content.toLowerCase().includes(searchTerm)
+  );
 
   useEffect(() => {
     getRealtimeArticlesFromFirestore();
   }, []);
 
-  return (
-    <div className="flex flex-col items-center mt-[100px]">
-      {articles &&
-        articles.map((article) => {
-          console.log(article);
-          return <Post key={article.datePublished} article={article} />;
-        })}
+  return filteredArticles.length === 0 ? (
+    <div className="flex items-center justify-center h-full mt-16 sm:mt-32 md:mt-40 lg:mt-56 xl:mt-64">
+      <div className="bg-white p-6 rounded-lg shadow-md text-center">
+        <h3 className="text-xl font-semibold mb-4">No posts found</h3>
+        <p className="text-gray-600 mb-4">
+          Sorry, there are no posts available at the moment.
+        </p>
+        <p className="text-gray-600">Create a new post</p>
+      </div>
+    </div>
+  ) : (
+    <div className="flex flex-col items-center mt-8 sm:mt-16 md:mt-20 lg:mt-24 xl:mt-32">
+      {filteredArticles &&
+        filteredArticles.map((article) => (
+          <Post key={article.datePublished} article={article} />
+        ))}
     </div>
   );
 };
